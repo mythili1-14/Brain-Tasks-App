@@ -23,3 +23,5 @@ artifacts:
     - 'imagedefinitions.json'
     - 'deployment.yaml'
     - 'service.yaml'
+    - 'appspec.yml'
+    - 'scripts/deploy.sh'
