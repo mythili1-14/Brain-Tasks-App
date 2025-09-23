@@ -5,12 +5,20 @@ phases:
     commands:
       - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 551210489378.dkr.ecr.us-east-1.amazonaws.com
+      - echo "Pulling nginx:alpine image from Docker Hub and pushing it to ECR..."
+      # Pull the nginx:alpine image and tag it for ECR
+      - docker pull nginx:alpine
+      - docker tag nginx:alpine 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:nginx-alpine
+      # Push the image to your ECR repository
+      - docker push 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:nginx-alpine
+
   build:
     commands:
       - echo "Build started on `date`"
       - echo "Building the Docker image..."
       - docker build -t brain-tasks/app .
       - docker tag brain-tasks/app:latest 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest
+
   post_build:
     commands:
       - echo "Build completed on `date`"
@@ -18,6 +26,7 @@ phases:
       - docker push 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest
       - echo "Creating image detail file..."
       - printf '[{"name":"brain-tasks/app","imageUri":"%s"}]' 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest > imagedefinitions.json
+
 artifacts:
   files:
     - 'imagedefinitions.json'
