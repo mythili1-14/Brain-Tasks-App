@@ -3,30 +3,26 @@ version: 0.2
 phases:
   pre_build:
     commands:
-      # Logging in to Amazon ECR with hardcoded region and account ID
+      # Log in to Amazon ECR
       - echo "Logging in to Amazon ECR..."
       - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 551210489378.dkr.ecr.us-east-1.amazonaws.com
+
   build:
     commands:
-      - echo "Build started on `date`"
       - echo "Building the Docker image..."
-      # Building and tagging the Docker image with hardcoded repository and tag
+      # Build and tag the Docker image
       - docker build -t brain-tasks/app .
       - docker tag brain-tasks/app:latest 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest
+
   post_build:
     commands:
-      - echo "Build completed on `date`"
       - echo "Pushing the Docker image to ECR..."
-      # Pushing the Docker image to ECR
+      # Push the image to ECR
       - docker push 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest
-      - echo "Creating image detail file..."
-      # Creating the imagedefinitions.json file
-      - printf '[{"name":"brain-tasks-app","imageUri":"%s"}]' 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest > imagedefinitions.json
+      - echo "Creating deployment package for Lambda..."
+      # Create a ZIP file containing all necessary deployment files
+      - zip -r deploy.zip lambda_function.py kubectl kubernetes/
 
 artifacts:
   files:
-    - 'imagedefinitions.json'
-    - 'kubernetes/deployment.yaml'
-    - 'kubernetes/service.yaml'
-    - 'appspec.yml'
-    - 'scripts/deploy.sh'
+    - 'deploy.zip'
