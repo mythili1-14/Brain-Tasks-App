@@ -1,50 +1,47 @@
 import os
 import subprocess
 import json
-import zipfile
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def handler(event, context):
     try:
-        # The input artifact from CodePipeline is passed as an event.
-        # It contains a reference to the location of the zipped files.
-        # You'll need to know the S3 bucket and key from the CodePipeline event.
-        # This is a conceptual example, and you may need to adjust based on your pipeline's event structure.
-        s3_bucket = event['CodePipelineJob']['data']['inputArtifacts'][0]['location']['s3Location']['bucketName']
-        s3_key = event['CodePipelineJob']['data']['inputArtifacts'][0]['location']['s3Location']['objectKey']
-        
-        # Download and extract the artifact
-        os.system(f"aws s3 cp s3://{s3_bucket}/{s3_key} /tmp/source.zip")
-        with zipfile.ZipFile('/tmp/source.zip', 'r') as zip_ref:
-            zip_ref.extractall('/tmp/extracted_files')
+        logger.info("Starting Lambda deployment function...")
 
-        # Download and configure kubectl
-        os.system("curl -o /tmp/kubectl https://s3.us-west-2.amazonaws.com/amazon-eks/1.24/2022-09-21/bin/linux/amd64/kubectl")
-        os.system("chmod +x /tmp/kubectl")
-        os.environ["PATH"] += ":/tmp"
-
-        # Configure kubeconfig for EKS
+        # Get environment variables from Lambda configuration
         cluster_name = os.environ.get("EKS_CLUSTER_NAME")
         aws_region = os.environ.get("AWS_REGION")
+
+        # 1. Download and configure kubectl
+        logger.info("Downloading and configuring kubectl...")
+        subprocess.run(
+            ["curl", "-o", "/tmp/kubectl", 
+             "https://s3.us-west-2.amazonaws.com/amazon-eks/1.24/2022-09-21/bin/linux/amd64/kubectl"]
+        )
+        os.chmod("/tmp/kubectl", 0o755)
+        os.environ["PATH"] = os.environ["PATH"] + ":/tmp"
+
+        # 2. Configure kubeconfig for EKS cluster access
+        logger.info("Configuring kubeconfig...")
         subprocess.run([
             "aws", "eks", "update-kubeconfig",
             "--name", cluster_name,
             "--region", aws_region
-        ])
-
-        # Apply Kubernetes deployment and service manifests
-        # The manifest files are now available in the extracted directory
-        subprocess.run(["kubectl", "apply", "-f", "/tmp/extracted_files/kubernetes/deployment.yaml"])
-        subprocess.run(["kubectl", "apply", "-f", "/tmp/extracted_files/kubernetes/service.yaml"])
+        ], check=True)
         
-        # Wait for the rollout to complete
-        subprocess.run([
-            "kubectl", "rollout", "status",
-            "deployment/brain-tasks-deployment",
-            "--namespace", "default"
-        ])
+        # 3. Execute the custom deployment script from the artifacts
+        logger.info("Executing custom deployment script...")
+        subprocess.run(["chmod", "+x", "./scripts/deploy.sh"], check=True)
+        subprocess.run(["./scripts/deploy.sh"], check=True)
 
+        logger.info("Deployment successful.")
         return {"statusCode": 200, "body": "Deployment successful"}
 
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Deployment failed: {e}")
+        return {"statusCode": 500, "body": f"Deployment failed: {e.output}"}
     except Exception as e:
-        print(e)
-        return {"statusCode": 500, "body": "Deployment failed"}
+        logger.error(f"An unexpected error occurred: {e}")
+        return {"statusCode": 500, "body": "An unexpected error occurred"}
