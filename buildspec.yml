@@ -3,34 +3,31 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      # Log in to Amazon ECR using environment variables for a reusable script.
       - echo "Logging in to Amazon ECR..."
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 551210489378.dkr.ecr.us-east-1.amazonaws.com
-      - echo "Pulling nginx:alpine image from Docker Hub and pushing it to ECR..."
-      # Pull the nginx:alpine image and tag it for ECR
-      - docker pull nginx:alpine
-      - docker tag nginx:alpine 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:nginx-alpine
-      # Push the image to your ECR repository
-      - docker push 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:nginx-alpine
-
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
   build:
     commands:
       - echo "Build started on `date`"
       - echo "Building the Docker image..."
-      - docker build -t brain-tasks/app .
-      - docker tag brain-tasks/app:latest 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest
-
+      # Build the application image using the Dockerfile and tag it with the repository URI.
+      - docker build -t $IMAGE_REPO_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_REPO_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
   post_build:
     commands:
       - echo "Build completed on `date`"
       - echo "Pushing the Docker image to ECR..."
-      - docker push 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest
-      - echo "Creating image detail file..."
-      - printf '[{"name":"brain-tasks/app","imageUri":"%s"}]' 551210489378.dkr.ecr.us-east-1.amazonaws.com/brain-tasks/app:latest > imagedefinitions.json
+      # Push the tagged application image to your ECR repository.
+      - docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG
+      - echo "Creating imagedefinitions.json for CodeDeploy..."
+      # This artifact is for CodeDeploy, but your deployment script uses kubectl.
+      # Ensure your EKS deployment process correctly handles this artifact.
+      - printf '[{"name":"brain-tasks-app","imageUri":"%s"}]' $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPO_NAME:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
   files:
     - 'imagedefinitions.json'
-    - 'deployment.yaml'
-    - 'service.yaml'
+    - 'kubernetes/deployment.yaml'
+    - 'kubernetes/service.yaml'
     - 'appspec.yml'
     - 'scripts/deploy.sh'
