@@ -60,6 +60,8 @@ To set up this project, you must have an AWS account with the necessary permissi
 
 ## Screenshots and Pipeline Status
 
+<img src="https://github.com/mythili1-14/Brain-Tasks-App/blob/main/screenshots/Screenshot_20250925_201016.png" alt="Banner" />
+
 
 -----
 
