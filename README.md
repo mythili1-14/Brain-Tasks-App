@@ -72,4 +72,4 @@ To set up this project, you must have an AWS account with the necessary permissi
 
 After a successful deployment, the AWS Load Balancer ARN for the application can be found in the EC2 console.
 
-**Load Balancer ARN**: `ae773b9e401834694b69f66e8d12f3ab-83a60a31650ca33d.elb.us-east-1.amazonaws.com`
+**Load Balancer ARN**: `http://af4f7528d501e4a29a30018ec24074fd-1452852875.us-east-1.elb.amazonaws.com/`
