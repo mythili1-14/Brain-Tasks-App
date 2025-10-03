@@ -58,14 +58,9 @@ To set up this project, you must have an AWS account with the necessary permissi
 
 -----
 
-## Screenshots and Pipeline Status
 
-<img src="https://github.com/mythili1-14/Brain-Tasks-App/blob/main/screenshots/Screenshot_20250925_201016.png" alt="Banner" />
-<img src="https://github.com/mythili1-14/Brain-Tasks-App/blob/main/screenshots/Screenshot_20250925_234744.png" alt="Banner" />
-<img src="https://github.com/mythili1-14/Brain-Tasks-App/blob/main/screenshots/Screenshot_20250925_203355.png" alt="Banner" />
+** Images available at /screenshots**
 
-
-** More Images available at /screenshots**
 -----
 
 ## Application Load Balancer ARN
